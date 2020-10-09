@@ -1,0 +1,71 @@
+
+FORMAT: 1A
+
+# example API
+
+Write an overall API discription.
+
+# examples action [/examples]
+
+Write a discription.
+
+## Create example [POST]
+
+Write a [POST] discription.
+
++ Request examples (application/json; charset=utf-8)
+    + Attributes
+        
++ Response 201 (application/json; charset=utf-8)
+    + Attributes (examples)
+
+## Get examples [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (array)
+        + (examples)
+        + (examples)
+
+# example action [/examples/{id}]
+
+Write a discription.
+
++ Parameters
+    + id: `1` (enum[string]) - The ID of the desired example.
+        + Members
+            + `1`
+            + `2`
+            + `3`
+
+## Get example [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (examples)
+
+## Update example [PUT]
+
+Write a [PUT] discription.
+
++ Request examples (application/json; charset=utf-8)
+    + Attributes
+        
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (examples)
+
+## Delete example [DELETE]
+
+Write a [DELETE] discription.
+
++ Response 204
+
+# Data Structures
+
+## examples (object)
+
++ id: 1 (number) - Id
++ created_at: `2000-01-01 00:00:00` (string) - CreatedTime
++ updated_at: `2000-01-01 00:00:00` (string) - UpdatedTime

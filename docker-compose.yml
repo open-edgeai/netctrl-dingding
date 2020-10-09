@@ -1,0 +1,28 @@
+version: '3.0'
+volumes: 
+  postgres_data:
+services:
+  db:
+    image: postgres
+    volumes: 
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: project_development
+      POSTGRES_PASSWORD: p12345678
+  app:
+    build:
+      context: .
+      
+    # command: bundle exec rails s -p 3000 -b '0.0.0.0'
+    # command: bash -c "rm -rf tmp/pids/server.pid && bundle exec  rails s  -e development -p 3000 -b '0.0.0.0' "
+    command: bash -c "rm -rf tmp/pids/server.pid && bundle exec  rails s  -e production -p 3000 -b '0.0.0.0' "
+
+    #command: bundle exec guard -i
+    #command: foreman start -f Procfile.dev -p 3000
+    volumes:
+      - .:/project
+    ports:
+      - "8082:3000"
+    depends_on:
+      - db

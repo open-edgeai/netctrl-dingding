@@ -1,0 +1,80 @@
+
+FORMAT: 1A
+
+# camera API
+
+Write an overall API discription.
+
+# cameras action [/cameras]
+
+Write a discription.
+
+## Create camera [POST]
+
+Write a [POST] discription.
+
++ Request cameras (application/json; charset=utf-8)
+    + Attributes
+        + oritention: MyString (string)
+        + user_name: MyString (string)
+        + password: MyString (string)
+        
++ Response 201 (application/json; charset=utf-8)
+    + Attributes (cameras)
+
+## Get cameras [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (array)
+        + (cameras)
+        + (cameras)
+
+# camera action [/cameras/{id}]
+
+Write a discription.
+
++ Parameters
+    + id: `1` (enum[string]) - The ID of the desired camera.
+        + Members
+            + `1`
+            + `2`
+            + `3`
+
+## Get camera [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (cameras)
+
+## Update camera [PUT]
+
+Write a [PUT] discription.
+
++ Request cameras (application/json; charset=utf-8)
+    + Attributes
+        + oritention: MyString (string)
+        + user_name: MyString (string)
+        + password: MyString (string)
+        
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (cameras)
+
+## Delete camera [DELETE]
+
+Write a [DELETE] discription.
+
++ Response 204
+
+# Data Structures
+
+## cameras (object)
+
++ id: 1 (number) - Id
++ oritention: MyString (string)
++ user_name: MyString (string)
++ password: MyString (string)
++ created_at: `2000-01-01 00:00:00` (string) - CreatedTime
++ updated_at: `2000-01-01 00:00:00` (string) - UpdatedTime

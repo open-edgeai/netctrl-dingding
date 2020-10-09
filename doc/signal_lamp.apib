@@ -1,0 +1,77 @@
+
+FORMAT: 1A
+
+# signal_lamp API
+
+Write an overall API discription.
+
+# signal_lamps action [/signal_lamps]
+
+Write a discription.
+
+## Create signal_lamp [POST]
+
+Write a [POST] discription.
+
++ Request signal_lamps (application/json; charset=utf-8)
+    + Attributes
+        + address: MyString (string)
+        + brand: MyString (string)
+        
++ Response 201 (application/json; charset=utf-8)
+    + Attributes (signal_lamps)
+
+## Get signal_lamps [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (array)
+        + (signal_lamps)
+        + (signal_lamps)
+
+# signal_lamp action [/signal_lamps/{id}]
+
+Write a discription.
+
++ Parameters
+    + id: `1` (enum[string]) - The ID of the desired signal_lamp.
+        + Members
+            + `1`
+            + `2`
+            + `3`
+
+## Get signal_lamp [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (signal_lamps)
+
+## Update signal_lamp [PUT]
+
+Write a [PUT] discription.
+
++ Request signal_lamps (application/json; charset=utf-8)
+    + Attributes
+        + address: MyString (string)
+        + brand: MyString (string)
+        
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (signal_lamps)
+
+## Delete signal_lamp [DELETE]
+
+Write a [DELETE] discription.
+
++ Response 204
+
+# Data Structures
+
+## signal_lamps (object)
+
++ id: 1 (number) - Id
++ address: MyString (string)
++ brand: MyString (string)
++ created_at: `2000-01-01 00:00:00` (string) - CreatedTime
++ updated_at: `2000-01-01 00:00:00` (string) - UpdatedTime

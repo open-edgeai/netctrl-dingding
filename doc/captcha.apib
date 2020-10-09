@@ -1,0 +1,71 @@
+
+FORMAT: 1A
+
+# captcha API
+
+Write an overall API discription.
+
+# captchas action [/captchas]
+
+Write a discription.
+
+## Create captcha [POST]
+
+Write a [POST] discription.
+
++ Request captchas (application/json; charset=utf-8)
+    + Attributes
+        
++ Response 201 (application/json; charset=utf-8)
+    + Attributes (captchas)
+
+## Get captchas [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (array)
+        + (captchas)
+        + (captchas)
+
+# captcha action [/captchas/{id}]
+
+Write a discription.
+
++ Parameters
+    + id: `1` (enum[string]) - The ID of the desired captcha.
+        + Members
+            + `1`
+            + `2`
+            + `3`
+
+## Get captcha [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (captchas)
+
+## Update captcha [PUT]
+
+Write a [PUT] discription.
+
++ Request captchas (application/json; charset=utf-8)
+    + Attributes
+        
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (captchas)
+
+## Delete captcha [DELETE]
+
+Write a [DELETE] discription.
+
++ Response 204
+
+# Data Structures
+
+## captchas (object)
+
++ id: 1 (number) - Id
++ created_at: `2000-01-01 00:00:00` (string) - CreatedTime
++ updated_at: `2000-01-01 00:00:00` (string) - UpdatedTime

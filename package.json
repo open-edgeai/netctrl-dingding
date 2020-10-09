@@ -1,0 +1,19 @@
+{
+  "name": "hellp",
+  "version": "1.0.0",
+  "description": "## 开发日志",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc",
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://52.82.31.245:8000/wangdonghua/iovprj"
+  },
+  "author": "",
+  "license": "ISC"
+}
