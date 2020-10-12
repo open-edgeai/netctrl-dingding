@@ -11,11 +11,13 @@ class AuthenticationController < ApplicationController
     #   render json: { error: "一个图文验证码只能验证一次" }, status: 200 and return
     # end
     # 账号密码验证
-    command = AuthenticateUser.call(params[:name], params[:password])
+    command = AuthenticateUser.call(params[:authcode])
     if command.success?
-      render json: { auth_token: command.result}
+      auth_token = command.result[0]
+      user = command.result[1]
+      render json: { auth_token: auth_token, userid: user.userid, name: user.name, mobile: user.mobile, isAdmin: user.isAdmin, isBoss: user.isBoss, avatar: user.avatar, isSenior: user.isSenior}
     else
-      render json: { error: command.errors }, status: :unauthorized
+      render json: { message: command.errors }, status: :unauthorized
     end
   end
 

@@ -2,6 +2,14 @@ version: '3.0'
 volumes: 
   postgres_data:
 services:
+  rabbitmq:
+      image: rabbitmq:3.8.2
+      hostname: rabbitmq
+      # environment:
+      #   RABBITMQ_DEFAULT_VHOST: "XXX"
+      #   RABBITMQ_DEFAULT_USER: "账户"
+      #   RABBITMQ_DEFAULT_PASS: "密码"
+      
   db:
     image: postgres
     volumes: 

@@ -1,0 +1,89 @@
+
+FORMAT: 1A
+
+# ddconfig API
+
+Write an overall API discription.
+
+# ddconfigs action [/ddconfigs]
+
+Write a discription.
+
+## Create ddconfig [POST]
+
+Write a [POST] discription.
+
++ Request ddconfigs (application/json; charset=utf-8)
+    + Attributes
+        + corpId: MyString (string)
+        + AppKey: MyString (string)
+        + AppSecret: MyString (string)
+        + rails_address: MyString (string)
+        + service_address: MyString (string)
+        + mqtt_address: MyString (string)
+        
++ Response 201 (application/json; charset=utf-8)
+    + Attributes (ddconfigs)
+
+## Get ddconfigs [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (array)
+        + (ddconfigs)
+        + (ddconfigs)
+
+# ddconfig action [/ddconfigs/{id}]
+
+Write a discription.
+
++ Parameters
+    + id: `1` (enum[string]) - The ID of the desired ddconfig.
+        + Members
+            + `1`
+            + `2`
+            + `3`
+
+## Get ddconfig [GET]
+
+Write a [GET] discription.
+
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (ddconfigs)
+
+## Update ddconfig [PUT]
+
+Write a [PUT] discription.
+
++ Request ddconfigs (application/json; charset=utf-8)
+    + Attributes
+        + corpId: MyString (string)
+        + AppKey: MyString (string)
+        + AppSecret: MyString (string)
+        + rails_address: MyString (string)
+        + service_address: MyString (string)
+        + mqtt_address: MyString (string)
+        
++ Response 200 (application/json; charset=utf-8)
+    + Attributes (ddconfigs)
+
+## Delete ddconfig [DELETE]
+
+Write a [DELETE] discription.
+
++ Response 204
+
+# Data Structures
+
+## ddconfigs (object)
+
++ id: 1 (number) - Id
++ corpId: MyString (string)
++ AppKey: MyString (string)
++ AppSecret: MyString (string)
++ rails_address: MyString (string)
++ service_address: MyString (string)
++ mqtt_address: MyString (string)
++ created_at: `2000-01-01 00:00:00` (string) - CreatedTime
++ updated_at: `2000-01-01 00:00:00` (string) - UpdatedTime
