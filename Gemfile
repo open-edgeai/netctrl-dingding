@@ -30,6 +30,8 @@ gem 'ancestry'
 gem 'simple_xlsx_reader', '~> 1.0.2'
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
+# mqtt通讯
+gem 'mqtt'
 
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.1.0', require: false

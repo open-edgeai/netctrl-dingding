@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  # skip_before_action :authenticate_request, only: [:surfingNet,:surfingControll]
+  # skip_before_action :authenticate_request
   before_action :set_user, only: [:show, :update, :destroy]
   
   # GET /users
@@ -141,16 +141,11 @@ class UsersController < ApplicationController
     # 取消token验证 测试
     # @current_user = User.first
 
-    # isBoss = @current_user.isBoss
-    # isAdmin = @current_user.isAdmin
-    # isLeaderInDepts = @current_user.isLeaderInDepts
-    # department = @current_user.department #单位数组
     ddtoken = @current_user.ddtoken
     # 确定查询头部门
     department_id = nil
     if params[:department_id].present? 
-      # render json:{message: "该用户没有查询该部门权限"},status: 300 and return if !isBoss && !isAdmin && !@current_user.isSurfingControll
-      department_id = params[:department_id]
+      department_id = params[:department_id].to_i
     else
       department_id = 1
     end
