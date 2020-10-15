@@ -9,8 +9,8 @@ class DdconfigsController < ApplicationController
     if Ddconfig.all.size == 0
       render json: {message: "还未配置"}, status: 200 and return
     else
-      @ddconfig = Ddconfig.first
-      render :show, status: :ok, location: @ddconfig
+      ddconfig = Ddconfig.first
+      render json:{CorpId: ddconfig.CorpId, AppKey: ddconfig.AppKey, AppSecret: ddconfig.AppSecret, AgentId: ddconfig.AgentId, RailsAddress: ddconfig.RailsAddress}, status: :ok and return
     end
   end
 
@@ -24,8 +24,21 @@ class DdconfigsController < ApplicationController
   def create
     # 验证appkey和appsecret
     parmas = {appkey: params[:AppKey], appsecret: params[:AppSecret]}
-    _, status, msg = User.getDD("https://oapi.dingtalk.com/gettoken", parmas)
+    res, status, msg = User.getDD("https://oapi.dingtalk.com/gettoken", parmas)
     render json: {message: msg},status: 300 and return if status != 200
+
+    # 验证AgentId
+    res, status, msg = User.postDD("https://oapi.dingtalk.com/microapp/list?access_token=#{res['access_token']}", {})
+    render json: {message: msg},status: 300 and return if status != 200
+    isFind = false
+    res['appList'].each do |app|
+      if app['agentId'].to_s == params[:AgentId]
+        isFind = true
+        break
+      end
+    end
+    render json: {message: "AgentId错误"},status: 300 and return if !isFind
+
 
     if Ddconfig.first.present?
       @ddconfig = Ddconfig.first

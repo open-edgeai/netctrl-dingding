@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  # skip_before_action :authenticate_request
+  # skip_before_action :authenticate_request, only: [:surfingNet]
   before_action :set_user, only: [:show, :update, :destroy]
   
   # GET /users
@@ -47,9 +47,11 @@ class UsersController < ApplicationController
     # 取消token验证 测试
     # @current_user = User.first
 
-    deparment_ids = params[:deparment_ids].present? ? params[:deparment_ids] : []
+    department_ids = params[:department_ids].present? ? params[:department_ids] : []
     users = params[:users].present? ? params[:users] : []
-    render json: {message: "参数错误"}, status: 300 and return if (users.blank? && deparment_ids.blank?) || params[:switch].nil?
+    notuserids = params[:department_not_userids].present? ? params[:department_not_userids] : []
+    notdepartmentids = params[:department_not].present? ? params[:department_not] : []
+    render json: {message: "参数错误"}, status: 300 and return if (users.blank? && department_ids.blank?) || params[:enable].nil?
 
     isAdmin = @current_user.isAdmin
     isSurfingControll = @current_user.isSurfingControll
@@ -66,16 +68,24 @@ class UsersController < ApplicationController
     end
 
     # 获取准备设置的部门信息
-    zb_department_ids = getSubPathId(deparment_ids, [])
-    deparment_ids.each do |did|
+    zb_department_ids = getSubPathId(department_ids, [])
+    not_zb_department_ids = getSubPathId(notdepartmentids, [])
+    notdepartmentids.each do |did|
+      not_zb_department_ids << did
+    end
+    Rails.logger.debug("---------需要去掉的部门集合： #{not_zb_department_ids}----------------")
+    zb_department_ids = zb_department_ids - not_zb_department_ids
+    department_ids.each do |did|
       if @departmentInfo["#{did}"].present?
         zb_department_ids << did
       end
     end
     Rails.logger.debug("------待设置的部门集合:#{zb_department_ids}------------------")
-    # 获取用户可控制的部门集合
-    kz_department_ids = getSubPathId(@current_user.department, [])
-    @current_user.department.each do |did|
+    # 获取用户可控制的下属部门集合
+    enable_departmentid = isAdmin ? [1] : @current_user.department
+    kz_department_ids = getSubPathId(enable_departmentid, [])
+    # 获取用户可控制的所有部门集合
+    enable_departmentid.each do |did|
       kz_department_ids << did
     end
     Rails.logger.debug("------用户控制设置的部门集合:#{kz_department_ids}------------------")
@@ -83,19 +93,21 @@ class UsersController < ApplicationController
     departmentids = zb_department_ids & kz_department_ids
     Rails.logger.debug("------设置的部门集合:#{departmentids}------------------")
     # 查找设置部门的所有员工
-    userids = []
+    userinfo = {}
     users.each do |user|
-      if departmentids.include? user[:deparment_id]
-        userids << user[:userid]
+      if kz_department_ids.include? user[:deparment_id]
+        userinfo["#{user[:userid]}"] = user[:name]
       end
     end
+    Rails.logger.debug("------添加单独需设置用户:#{userinfo}------------------")
     departmentids.each do |did|
       p = {access_token: ddtoken, department_id: did}
       r, status, msg = User.getDD("https://oapi.dingtalk.com/user/simplelist", p)
       if msg == ""
         r['userlist'].each do |u|
-          if !(userids.include? u['userid'])
-            userids << u['userid']
+          # 排除已添加的选择用户和在部门中排除的用户
+          if !(userinfo.keys.include? u['userid']) && !(notuserids.include? u['userid'])
+            userinfo["#{u['userid']}"] = u['name']
           end
         end
       else
@@ -103,15 +115,21 @@ class UsersController < ApplicationController
         Rails.logger.debug("------查询部门用户出错:#{msg}------------------")
       end
     end
-    Rails.logger.debug("------用户可用控制的所有用户id集合:#{userids}------------------")
-    userids.each do |userid|
+    Rails.logger.debug("------用户可用控制的所有用户集合:#{userinfo}------------------")
+    users = []
+    userinfo.each do |userid, name|
       u = User.find_by(userid: userid)
       if u.blank?
-        u = User.create(userid: userid)
+        u = User.new
       end
-      u.update(isSurfingNet: params[:switch])
+      u.update(userid: userid, name: name, isSurfingNet: params[:enable], pyname: User.getPYName(u))
+      users << {
+        name: u.pyname,
+        enable: params[:enable]
+      }
     end
-    # TODO 通知mqtt
+    # 通知网控
+    Rabbitmq.send(users)
     render json: {message: "设置成功"}, status: 200
   end
 
@@ -123,15 +141,16 @@ class UsersController < ApplicationController
     isAdmin = @current_user.isAdmin
     render json: {message: "非管理员不能操作上网控制开关"}, status: 300 and return if !isAdmin 
     userids = params[:userids].present? ? params[:userids] : []
-    render json: {message: "参数错误"}, status: 300 and return if userids.blank? || params[:switch].nil?
+    render json: {message: "参数错误"}, status: 300 and return if userids.blank? || params[:enable].nil?
     userids.each do |userid|
       user = User.find_by(userid: userid)
       if user.blank?
         user = User.new
       end
       user.userid = userid
-      user.isSurfingControll = params[:switch]
+      user.isSurfingControll = params[:enable]
       user.save
+      user.update(pyname: User.getPYName(user))
     end
     render json:{message: "设置成功"},status: :ok
   end
@@ -171,54 +190,6 @@ class UsersController < ApplicationController
         }
       end
     end
-
-    # # 获取当前部门列表(缺少人员总数)
-    # parmas = {access_token: ddtoken, id: department_id}
-    # res,status, msg = User.getDD("https://oapi.dingtalk.com/department/list", parmas)
-  
-    # render json:{message: msg}, status: status and return if msg != ""
-    
-    # res['department'].each do |department|
-    #   # 只显示查询部门的下一层级
-    #   # Rails.logger.debug("--查询部门id:#{department['parentid']}----department_id: #{department_id}-----------------")
-    #   if department['parentid'].to_s == department_id.to_s
-    #     # Rails.logger.debug("--查询部门id:#{department['parentid']}---------------------")
-    #     cnt = 0
-    #     # # 查询该部门的下属部门
-    #     # sub_dept_id_list = []
-    #     # p = {access_token: ddtoken, id: department['id']}
-    #     # r,status, msg = User.getDD("https://oapi.dingtalk.com/department/list_ids", p)
-    #     # if msg == ""
-    #     #   sub_dept_id_list = r['sub_dept_id_list']
-    #     # else
-    #     #   render json:{message: msg},status: status and return if status == 301
-    #     #   Rails.logger.debug("--查询该部门的下属部门出错:#{msg}---------------------")
-    #     # end
-    #     # # 部门自身
-    #     # sub_dept_id_list << department['id']
-    #     # # Rails.logger.debug("--查询该部门的下属部门结果:#{sub_dept_id_list}---------------------")
-    #     # # 查询下属所有部门下属所有员工人数
-    #     # sub_dept_id_list.each do |did|
-    #     #   p = {access_token: ddtoken, department_id: did}
-    #     #   r, status, msg = User.getDD("https://oapi.dingtalk.com/user/simplelist", p)
-    #     #   if msg == ""
-    #     #     # Rails.logger.debug("--查询下属所有部门下属所有员工人数大小:#{r['userlist']}---------------------")
-    #     #     cnt = cnt + r['userlist'].size
-    #     #   else
-    #     #     render json:{message: msg},status: status and return if status == 301
-    #     #     Rails.logger.debug("--查询下属所有部门下属所有员工人数出错:#{msg}---------------------")
-    #     #   end
-    #     # end
-
-    #     departments << {
-    #       id: department['id'],
-    #       name: department['name'],
-    #       cnt: cnt
-    #     }
-    #   end
-    # end
-    # Rails.logger.debug("-----------@departmentInfo: #{@departmentInfo}--------------")
-
     # 获取该部门的用户详情
     offset = params[:offset].present? ? params[:offset] : 0
     size = params[:size].present? ? params[:size] : 10
@@ -246,6 +217,7 @@ class UsersController < ApplicationController
       user.position = u['position']
       user.avatar = u['avatar']
       user.save
+      user.update(pyname: User.getPYName(user))
       users << {
         userid: u['userid'],
         isLeader: u['isLeader'],
@@ -273,7 +245,7 @@ class UsersController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def user_params
-      params.permit(:userid, :unionid, :mobile, :tel, :workPlace, :isAdmin, :isBoss, :isLeaderInDepts, :name, :active, :department, :isSenior, :position, :avatar, :ddtoken, :isSurfingNet, :isSurfingControll, :department_id, :offset, :size, :switch, :deparment_ids=>[], :users=>[])
+      params.permit(:userid, :unionid, :mobile, :tel, :workPlace, :isAdmin, :isBoss, :isLeaderInDepts, :name, :active, :department, :isSenior, :position, :avatar, :ddtoken, :isSurfingNet, :isSurfingControll, :department_id, :offset, :size, :enable, :department_ids=>[], :users=>[], :department_not_userids=>[], :department_not=>[])
     end
 
     # 获取所有上级部门路径

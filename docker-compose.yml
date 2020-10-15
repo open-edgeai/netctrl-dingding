@@ -5,15 +5,16 @@ services:
   rabbitmq:
     image: rabbitmq:3.8.2
     hostname: rabbitmq
-    # environment:
+    environment:
     #   RABBITMQ_DEFAULT_VHOST: "XXX"  #默认虚拟机名
-    #   RABBITMQ_DEFAULT_USER: "账户"
-    #   RABBITMQ_DEFAULT_PASS: "密码"
-    # ports:
-    #   - "15672:15672" #管理界面ui端口
-    #   - "4369:4369" #erlang发现口
-    #   - "5672:5672" #client端通信口
-    #   - "25672:25672" #server间内部通信口
+       RABBITMQ_DEFAULT_USER: edgeai
+       RABBITMQ_DEFAULT_PASS: p123456
+    ports:
+      - "15672:15672" #管理界面ui端口
+      # - "4369:4369" #erlang发现口
+      - "5672:5672" #client端通信口
+      - "1883:1883"
+      # - "25672:25672" #server间内部通信口
       
   db:
     image: postgres
@@ -30,6 +31,7 @@ services:
     # command: bundle exec rails s -p 3000 -b '0.0.0.0'
     # command: bash -c "rm -rf tmp/pids/server.pid && bundle exec  rails s  -e development -p 3000 -b '0.0.0.0' "
     command: bash -c "rm -rf tmp/pids/server.pid && bundle exec  rails s  -e production -p 3000 -b '0.0.0.0' "
+    # command: bash -c "sleep 10 && rm -rf tmp/pids/server.pid && bundle exec  rails s  -e production -p 3000 -b '0.0.0.0' "
 
     #command: bundle exec guard -i
     #command: foreman start -f Procfile.dev -p 3000

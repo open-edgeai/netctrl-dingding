@@ -10,8 +10,14 @@
 |RailsAddress|string||
 |ServiceAddress|string|网控服务地址|
 |MqttAddress|string||
+|DDToken|string|钉钉token(新增)|
+|DDTokenCreatedAt|datetime|钉钉token生成时间2小时有效(新增)|
+
+> rabbitmq 接收到消息后发送需要钉钉token
 
 docker-compose exec app rails g apiblueprint ddconfig CorpId AppKey AppSecret RailsAddress ServiceAddress MqttAddress
+docker-compose exec app rails g migration add_DDToken_to_ddconfig DDToken
+docker-compose exec app rails g migration add_DDTokenCreatedAt_to_ddconfig DDTokenCreatedAt:datetime
 
 * 用户 user
 
@@ -34,5 +40,21 @@ docker-compose exec app rails g apiblueprint ddconfig CorpId AppKey AppSecret Ra
 |ddtoken|string|钉钉token|
 |isSurfingNet|boolean|是否能上网|
 |isSurfingControll|boolean|是否能控制下属上网|
+|pyname|string|(新增)|
 
 docker-compose exec app rails g apiblueprint user userid unionid mobile tel workPlace isAdmin:boolean isBoss:boolean isLeaderInDepts isSenior:boolean name active:boolean department position avatar ddtoken isSurfingNet:boolean isSurfingControll:boolean
+
+> 保存通知rabbitmq的用户名信息
+docker-compose exec app rails g migration add_pyname_to_user pyname
+
+* rabbitmq通讯
+
+>初始化账户信息 
+查询： 网控  -->  rails  queue : userinfo
+msg = {type: "getuserlist"}
+应答: rails --> 网控  queue : update_userinfo
+msg = {type: "userlist", list: [{name: XX, password: XX, enable: XX}],..}
+
+>用户上网状态更改
+rails --> 网控  queue : update_userinfo
+msg = {type: "userlist", list: [{name: XX, password: XX, enable: XX}],..}

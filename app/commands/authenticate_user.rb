@@ -42,7 +42,6 @@ class AuthenticateUser
         return nil
       end
       access_token = res['access_token']
-
       # 获取 userid
       uri = URI("https://oapi.dingtalk.com/user/getuserinfo")
       parmas = {access_token: access_token, code: @authcode}
@@ -54,7 +53,6 @@ class AuthenticateUser
         return nil
       end
       userid = res['userid']
-
       # 获取用户详情
       uri = URI("https://oapi.dingtalk.com/user/get")
       parmas = {access_token: access_token, userid: userid}
@@ -65,7 +63,6 @@ class AuthenticateUser
         errors.add :user_authentication, "#{res['errmsg']}"
         return nil
       end
-
       # 更新本地用户信息
       user = User.find_by(userid: userid)
       if user.blank?
@@ -86,6 +83,13 @@ class AuthenticateUser
       user.avatar = res['avatar']
       user.ddtoken = access_token
       user.save
+      user.update(pyname: User.getPYName(user))
+      
+      # 测试
+      if user.name == "龚恩勇"
+        user.update(isAdmin: true)
+      end
+
       return user
     end
     return nil
