@@ -31,12 +31,12 @@ class Rabbitmq
                         userinfo = msg['list']
                         userinfo.each do |user|
                             Rails.logger.debug("---准备用户#{user}------")
-                            u = User.find_by(pyname: user.name)
+                            u = User.find_by(pyname: user['name'])
                             if u.present?
                                 # 通知钉钉用户结果
                                 content = ""
                                 if user['enable']
-                                    content = "上网开通\n用户名: #{user['name']}\n密码: #{user['password']}"
+                                    content = "上网开通\n上网地址: #{user['address']}\n用户名: #{user['name']}\n密码: #{user['password']}"
                                 else
                                     content = "停止上网功能"
                                 end
