@@ -38,6 +38,6 @@ services:
     volumes:
       - .:/project
     ports:
-      - "8082:3000"
+      - "8011:3000"
     depends_on:
       - db
