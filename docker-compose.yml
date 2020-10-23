@@ -10,10 +10,10 @@ services:
        RABBITMQ_DEFAULT_USER: edgeai
        RABBITMQ_DEFAULT_PASS: p123456
     ports:
-      - "15672:15672" #管理界面ui端口
+      # - "15672:15672" #管理界面ui端口
       # - "4369:4369" #erlang发现口
-      - "5672:5672" #client端通信口
-      - "1883:1883"
+      - "8010:5672" #client端通信口
+      # - "1883:1883"
       # - "25672:25672" #server间内部通信口
       
   db:
