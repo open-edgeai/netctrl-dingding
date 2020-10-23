@@ -38,11 +38,11 @@ class Rabbitmq
                                 if user['enable']
                                     content = "上网开通\n上网地址: #{user['address']}\n用户名: #{user['name']}\n密码: #{user['password']}"
                                 else
-                                    content = "停止上网功能"
+                                    content = "停止上网功能\n#{Time.current}"
                                 end
                                 p = {agent_id: ddconfig.try(:AgentId), userid_list: u.userid, msg: {"msgtype": "text", "text":{"content": content}}.to_json}
                                 User.postDD("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2?access_token=#{token}", p)
-                                # Rails.logger.debug("====res: #{res}===status: #{status}====msg: #{msg}=====")
+                                Rails.logger.debug("====res: #{res}========")
                             end
                         end
                     end

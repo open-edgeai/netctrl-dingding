@@ -8,7 +8,15 @@ class User < ApplicationRecord
   def default_values
     self.isSurfingNet ||= false
     self.isSurfingControll ||= false
+    self.isExamine ||= false
   end
+
+  # def self.init_user
+  #   u = User.find_by(name: "admin")
+  #   if u.blank?
+  #     User.create(name: "admin", userid: "000000", pyname: "admin")
+  #   end
+  # end
 
   def self.getDD(uriStr, parmas)
     uri = URI(uriStr)

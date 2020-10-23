@@ -26,9 +26,9 @@ class DdconfigsController < ApplicationController
     parmas = {appkey: params[:AppKey], appsecret: params[:AppSecret]}
     res, status, msg = User.getDD("https://oapi.dingtalk.com/gettoken", parmas)
     render json: {message: msg},status: 300 and return if status != 200
-
+    token = res['access_token']
     # 验证AgentId
-    res, status, msg = User.postDD("https://oapi.dingtalk.com/microapp/list?access_token=#{res['access_token']}", {})
+    res, status, msg = User.postDD("https://oapi.dingtalk.com/microapp/list?access_token=#{token}", {})
     render json: {message: msg},status: 300 and return if status != 200
     isFind = false
     res['appList'].each do |app|
@@ -42,6 +42,7 @@ class DdconfigsController < ApplicationController
 
     if Ddconfig.first.present?
       @ddconfig = Ddconfig.first
+      ddconfig_params.merge!(DDToken: token, DDTokenCreatedAt: Time.current)
       if @ddconfig.update(ddconfig_params)
         render :show, status: :ok, location: @ddconfig
       else

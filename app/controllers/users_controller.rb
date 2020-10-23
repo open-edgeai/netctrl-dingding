@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  # skip_before_action :authenticate_request, only: [:surfingNet]
+  skip_before_action :authenticate_request, only: [:examine_info, :upload_examine]
   before_action :set_user, only: [:show, :update, :destroy]
   
   # GET /users
@@ -40,6 +40,119 @@ class UsersController < ApplicationController
   # DELETE /users/1.json
   def destroy
     @user.destroy
+  end
+
+  # POST /uploadexamine 上传文件通知审核员
+  def upload_examine
+    # 上传用户
+    user = User.find_by(pyname: params[:upload_name])
+    render json: {message: "用户不存在", errorcode: 1}, status: 200 and return if user.blank?
+    
+    ddconfig = Ddconfig.first
+    if ddconfig.blank?
+      render json: {message: "钉钉服务未配置", errorcode: 1}, status: 200 and return
+    end
+    token = ""
+    if ddconfig.DDToken.present? && ddconfig.DDTokenCreatedAt.present? && ddconfig.DDTokenCreatedAt + 7100 >= Time.current
+      token = ddconfig.DDToken
+    else
+      # 获取 access_token
+      uri = URI("https://oapi.dingtalk.com/gettoken")
+      p = {appkey: config.AppKey, appsecret: config.AppSecret}
+      res, _, msg = User.getDD(uri, p)
+      if msg != ""
+        render json: {message: msg, errorcode: 1}, status: 200 and return
+      end
+      token = res['access_token']
+      ddconfig.update(DDToken: token, DDTokenCreatedAt: Time.current)
+    end
+    content = "#{params["upload_name"]}在#{DateTime.parse(params["upload_time"]).strftime('%Y-%m-%d %H:%M:%S').to_s}上传了文件，请及时审核"
+    if user.isExamine
+        render json: {errorcode: 0, "ExamineName": user.pyname}, status: 200
+        noteDD(ddconfig.try(:AgentId),user.userid,content,token)
+        return
+    end
+    # 查询父级部门
+    uri = URI("https://oapi.dingtalk.com/department/list_parent_depts")
+    p = {access_token: token, userId: user.userid}
+    res, _, msg = User.getDD(uri, p)
+    if msg != ""
+      render json: {message: msg, errorcode: 1}, status: 200 and return
+    end
+    departments = res['department']
+    departments.each do |ds|
+      ds.each do |did|
+        # 获取该部门的审核人
+        users = User.where("\"isExamine\" = ? and (department like '%[?]%' or department like '%,?,%' or department like '%[?,%' or department like '%,?]%')",true, did, did, did, did).order(:id)
+        users.each do |u|
+          render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
+          # 广播通知审核员
+          noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+          return
+        end
+      end
+    end
+    render json: {errorcode: 1, message: "未设置审核员"}, status: 200
+  end
+
+  # GET /examineinfo 登录获取用户审核身份
+  def examine_info
+    user = User.find_by(pyname: params[:name])
+    render json: {message: "用户不存在", errorcode: 1}, status: 200 and return if user.blank?
+    # 超级用户
+    if user.name == "admin"
+      render json: {errorcode: 0, is_examine: true, is_admin: true, name: user.pyname}, status: :ok and return
+    end
+    # 获取钉钉用户信息
+    ddconfig = Ddconfig.first
+    if ddconfig.blank?
+      render json: {message: "钉钉服务未配置", errorcode: 1}, status: 200 and return
+    end
+    token = ""
+    if ddconfig.DDToken.present? && ddconfig.DDTokenCreatedAt.present? && ddconfig.DDTokenCreatedAt + 7100 >= Time.current
+      token = ddconfig.DDToken
+    else
+      # 获取 access_token
+      uri = URI("https://oapi.dingtalk.com/gettoken")
+      p = {appkey: ddconfig.AppKey, appsecret: ddconfig.AppSecret}
+      res, _, msg = User.getDD(uri, p)
+      if msg != ""
+        render json: {message: msg, errorcode: 1}, status: 200 and return
+      end
+      token = res['access_token']
+      ddconfig.update(DDToken: token, DDTokenCreatedAt: Time.current)
+    end
+    # 获取用户信息
+    uri = URI("https://oapi.dingtalk.com/user/get")
+    p = {access_token: token, userid: user.userid}
+    res, _, msg = User.getDD(uri, p)
+    if msg != ""
+      render json: {message: msg, errorcode: 1}, status: 200 and return
+    end
+    render json: {errorcode: 0, is_examine: user.isExamine, is_admin: res['isAdmin'], name: user.pyname}, status: :ok
+  end
+
+  # POST /examine 设置审核员
+  def examine
+    # @current_user = User.first
+
+    isAdmin = @current_user.isAdmin
+    render json: {message: "非管理员不能操作审核控制开关"}, status: 300 and return if !isAdmin 
+    userids = params[:userids].present? ? params[:userids] : []
+    render json: {message: "参数错误"}, status: 300 and return if userids.blank? || params[:enable].nil?
+
+    userids.each do |userid|
+      user = User.find_by(userid: userid)
+      if user.blank?
+        user = User.new
+      end
+      user.userid = userid
+      user.isExamine = params[:enable]
+      user.save
+      user.update(pyname: User.getPYName(user))
+    end
+    render json:{message: "设置成功"},status: :ok
+
   end
 
   # POST /surfingNet 设置上网开关
@@ -122,11 +235,14 @@ class UsersController < ApplicationController
       if u.blank?
         u = User.new
       end
+      # 上网状态变动才的用户才通知
+      if params[:enable] != u.isSurfingNet
+        users << {
+          name: u.pyname,
+          enable: params[:enable]
+        }
+      end
       u.update(userid: userid, name: name, isSurfingNet: params[:enable], pyname: User.getPYName(u))
-      users << {
-        name: u.pyname,
-        enable: params[:enable]
-      }
     end
     # 通知网控
     Rabbitmq.send(users)
@@ -228,7 +344,8 @@ class UsersController < ApplicationController
         name: u['name'],
         position: u['position'],
         isSurfingNet: user.isSurfingNet,
-        isSurfingControll: user.isSurfingControll
+        isSurfingControll: user.isSurfingControll,
+        isExamine: user.isExamine
       }
     end
 
@@ -245,7 +362,7 @@ class UsersController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def user_params
-      params.permit(:userid, :unionid, :mobile, :tel, :workPlace, :isAdmin, :isBoss, :isLeaderInDepts, :name, :active, :department, :isSenior, :position, :avatar, :ddtoken, :isSurfingNet, :isSurfingControll, :department_id, :offset, :size, :enable, :department_ids=>[], :users=>[], :department_not_userids=>[], :department_not=>[])
+      params.permit(:userid, :unionid, :mobile, :tel, :workPlace, :isAdmin, :isBoss, :isLeaderInDepts, :name, :active, :department, :isSenior, :position, :avatar, :ddtoken, :isSurfingNet, :isSurfingControll, :department_id, :offset, :size, :enable, :upload_name, :upload_time, :department_ids=>[], :users=>[], :department_not_userids=>[], :department_not=>[])
     end
 
     # 获取所有上级部门路径
@@ -275,6 +392,12 @@ class UsersController < ApplicationController
       else
         getSubPathId(parentid, paths)
       end
+    end
+
+    # 通知审核人 钉钉工作通知
+    def noteDD(agent_id,userid_list,content,token)
+      p = {agent_id: agent_id, userid_list: userid_list, msg: {"msgtype": "text", "text":{"content": content}}.to_json}
+      User.postDD("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2?access_token=#{token}", p)
     end
 
 end

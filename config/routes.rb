@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  post 'uploadexamine', to: 'users#upload_examine'
+  get 'examineinfo', to: 'users#examine_info'
+  post 'examine', to: 'users#examine'
   post 'surfingControll', to: 'users#surfingControll'
   post 'surfingNet', to: 'users#surfingNet'
   get 'departments', to: 'users#departments'
