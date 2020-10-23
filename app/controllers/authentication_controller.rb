@@ -24,5 +24,9 @@ class AuthenticationController < ApplicationController
   def version
     render json: { version: '1.1', message: "多态"}, status: 200
   end
+
+  def index
+    
+  end
       
 end

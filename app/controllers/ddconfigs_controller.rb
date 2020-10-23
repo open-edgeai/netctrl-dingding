@@ -44,16 +44,16 @@ class DdconfigsController < ApplicationController
       @ddconfig = Ddconfig.first
       ddconfig_params.merge!(DDToken: token, DDTokenCreatedAt: Time.current)
       if @ddconfig.update(ddconfig_params)
-        render :show, status: :ok, location: @ddconfig
+        render json: {message: "配置成功"}, status: 200 and return
       else
-        render json: {message: "配置失败", errors: @ddconfig.errors}, status: 300 and return
+        render json: {message: "配置失败"}, status: 300 and return
       end
     else
       @ddconfig = Ddconfig.new(ddconfig_params)
       if @ddconfig.save
-        render :show, status: 200, location: @ddconfig
+        render json: {message: "配置成功"}, status: 200 and return
       else
-        render json: @ddconfig.errors, status: :unprocessable_entity
+        render json: {message: "配置失败"}, status: 300 and return
       end
     end
   end
@@ -82,6 +82,6 @@ class DdconfigsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def ddconfig_params
-      params.permit(:CorpId, :AppKey, :AppSecret, :AgentId, :RailsAddress, :ServiceAddress, :MqttAddress)
+      params.permit(:CorpId, :AppKey, :AppSecret, :AgentId)
     end
 end

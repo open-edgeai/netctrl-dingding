@@ -18,8 +18,11 @@ class CreateUsers < ActiveRecord::Migration[5.2]
       t.string :ddtoken
       t.boolean :isSurfingNet
       t.boolean :isSurfingControll
+      t.boolean :isExamine
+      t.string :pyname
 
       t.timestamps
     end
+    add_index :users, :pyname
   end
 end

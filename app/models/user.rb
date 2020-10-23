@@ -11,13 +11,6 @@ class User < ApplicationRecord
     self.isExamine ||= false
   end
 
-  # def self.init_user
-  #   u = User.find_by(name: "admin")
-  #   if u.blank?
-  #     User.create(name: "admin", userid: "000000", pyname: "admin")
-  #   end
-  # end
-
   def self.getDD(uriStr, parmas)
     uri = URI(uriStr)
     uri.query = URI.encode_www_form(parmas)

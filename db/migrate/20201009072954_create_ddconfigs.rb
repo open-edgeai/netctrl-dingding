@@ -5,9 +5,8 @@ class CreateDdconfigs < ActiveRecord::Migration[5.2]
       t.string :AppKey
       t.string :AppSecret
       t.string :AgentId
-      t.string :RailsAddress
-      t.string :ServiceAddress
-      t.string :MqttAddress
+      t.string :DDToken
+      t.datetime :DDTokenCreatedAt
 
       t.timestamps
     end
