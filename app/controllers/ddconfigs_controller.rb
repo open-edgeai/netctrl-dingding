@@ -10,7 +10,7 @@ class DdconfigsController < ApplicationController
       render json: {message: "还未配置"}, status: 200 and return
     else
       ddconfig = Ddconfig.first
-      render json:{CorpId: ddconfig.CorpId, AppKey: ddconfig.AppKey, AppSecret: ddconfig.AppSecret, AgentId: ddconfig.AgentId, RailsAddress: ddconfig.RailsAddress}, status: :ok and return
+      render json:{CorpId: ddconfig.CorpId, AppKey: ddconfig.AppKey, AppSecret: ddconfig.AppSecret, AgentId: ddconfig.AgentId}, status: :ok and return
     end
   end
 
