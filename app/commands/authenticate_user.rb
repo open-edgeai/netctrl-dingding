@@ -83,11 +83,6 @@ class AuthenticateUser
       user.save
       user.update(pyname: User.getPYName(user))
       
-      # 测试
-      if user.name == "龚恩勇"
-        user.update(isAdmin: true)
-      end
-
       return user
     end
     return nil
