@@ -67,6 +67,7 @@ class Rabbitmq
     def self.send(users)
         msg = {type: "userlist", list: users}
         $rbmq_send.publish(msg.to_json, :routing_key => "update_userinfo")
+        # $rbmq_send.publish(msg.to_json)
     end
 
     # def self.getuserinfo
