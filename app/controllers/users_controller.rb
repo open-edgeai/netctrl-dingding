@@ -66,7 +66,7 @@ class UsersController < ApplicationController
       token = res['access_token']
       ddconfig.update(DDToken: token, DDTokenCreatedAt: Time.current)
     end
-    content = "#{params["upload_name"]}在#{DateTime.parse(params["upload_time"]).strftime('%Y-%m-%d %H:%M:%S').to_s}上传了文件，请及时审核"
+    content = "用户: #{user.name}\n帐号: #{params["upload_name"]}\n在#{DateTime.parse(params["upload_time"]).strftime('%Y-%m-%d %H:%M:%S').to_s}上传了文件，请及时审核"
     if user.isExamine
         render json: {errorcode: 0, "ExamineName": user.pyname}, status: 200
         noteDD(ddconfig.try(:AgentId),user.userid,content,token)
@@ -237,15 +237,21 @@ class UsersController < ApplicationController
       end
       # 上网状态变动才的用户才通知
       if params[:enable] != u.isSurfingNet
+        # 初始化密码
+        pwd = ""
+        if params[:enable] == true
+          pwd = ((('a'..'z').to_a - ["o","l"])+ (2..9).to_a + (('A'..'Z').to_a - ["O","I"])).shuffle[0,6].join("")
+        end
         users << {
           name: u.pyname,
-          enable: params[:enable]
+          enable: params[:enable],
+          password: pwd
         }
       end
       u.update(userid: userid, name: name, isSurfingNet: params[:enable], pyname: User.getPYName(u))
     end
     # 通知网控
-    Rabbitmq.send(users)
+    Rabbitmq.send("userlist", users)
     render json: {message: "设置成功"}, status: 200
   end
 
