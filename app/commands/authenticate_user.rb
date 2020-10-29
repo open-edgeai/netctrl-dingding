@@ -82,7 +82,7 @@ class AuthenticateUser
       user.ddtoken = access_token
       user.save
       user.update(pyname: User.getPYName(user))
-      
+
       return user
     end
     return nil

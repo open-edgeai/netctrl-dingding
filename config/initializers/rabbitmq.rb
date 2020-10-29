@@ -6,8 +6,8 @@ connection.start
 Thread.new do
     # 通知上网用户变动 rails -- > XX
     ch_s = connection.create_channel
-    $rbmq_send = ch_s.default_exchange
-    # $rbmq_send = ch_s.fanout("jwk") #发送到交换机端
+    # $rbmq_send = ch_s.default_exchange
+    $rbmq_send = ch_s.fanout("jwk") #发送到交换机端
     # users = [{name: "laixinyi1", password: "123123", enable: true}]
     # 测试 $rbmq_send.publish(users.to_json, :routing_key => "userinfo")  to_json: 转换为json字符串
 

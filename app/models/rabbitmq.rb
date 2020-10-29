@@ -38,7 +38,7 @@ class Rabbitmq
                                 if user['enable']
                                     content = "上网开通\n上网地址: #{user['address']}\n用户名: #{user['name']}\n初始密码: #{user['password']}"
                                 else
-                                    content = "停止上网功能\n#{Time.current}"
+                                    content = "用户名: #{user['name']}\n时间: #{msg['time']}\n停止上网功能"
                                 end
                                 p = {agent_id: ddconfig.try(:AgentId), userid_list: u.userid, msg: {"msgtype": "text", "text":{"content": content}}.to_json}
                                 User.postDD("https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2?access_token=#{token}", p)
@@ -54,7 +54,7 @@ class Rabbitmq
                             enable: user.isSurfingNet
                         }
                     end
-                    send(userinfo)
+                    send("getuserlist",userinfo)
                 end
                 
             rescue => e
@@ -64,10 +64,10 @@ class Rabbitmq
         end
     end
 
-    def self.send(users)
-        msg = {type: "userlist", list: users}
-        $rbmq_send.publish(msg.to_json, :routing_key => "update_userinfo")
-        # $rbmq_send.publish(msg.to_json)
+    def self.send(type, users)
+        msg = {type: type, list: users, "time": Time.current.strftime("%Y-%m-%d %H:%M:%S")}
+        # $rbmq_send.publish(msg.to_json, :routing_key => "update_userinfo")
+        $rbmq_send.publish(msg.to_json)
     end
 
     # def self.getuserinfo
