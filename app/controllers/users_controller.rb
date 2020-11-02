@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  skip_before_action :authenticate_request, only: [:examine_info, :upload_examine]
+  skip_before_action :authenticate_request, only: [:examine_info, :upload_examine, :examine_result]
   before_action :set_user, only: [:show, :update, :destroy]
   
   # GET /users
@@ -66,12 +66,7 @@ class UsersController < ApplicationController
       token = res['access_token']
       ddconfig.update(DDToken: token, DDTokenCreatedAt: Time.current)
     end
-    content = "用户: #{user.name}\n帐号: #{params["upload_name"]}\n在#{DateTime.parse(params["upload_time"]).strftime('%Y-%m-%d %H:%M:%S').to_s}上传了文件，请及时审核"
-    if user.isExamine
-        render json: {errorcode: 0, "ExamineName": user.pyname}, status: 200
-        noteDD(ddconfig.try(:AgentId),user.userid,content,token)
-        return
-    end
+
     # 查询父级部门
     uri = URI("https://oapi.dingtalk.com/department/list_parent_depts")
     p = {access_token: token, userId: user.userid}
@@ -79,11 +74,12 @@ class UsersController < ApplicationController
     if msg != ""
       render json: {message: msg, errorcode: 1}, status: 200 and return
     end
+    content = "用户: #{user.name}\n帐号: #{params["upload_name"]}\n在#{DateTime.parse(params["upload_time"]).strftime('%Y-%m-%d %H:%M:%S').to_s}上传了文件，请及时审核"
     departments = res['department']
     departments.each do |ds|
       ds.each do |did|
         # 获取该部门的审核人
-        users = User.where("\"isExamine\" = ? and (department like '%[?]%' or department like '%,?,%' or department like '%[?,%' or department like '%,?]%')",true, did, did, did, did).order(:id)
+        users = User.where("\"isExamine\" = ? and \"userid\" <> ? and (department like '%[?]%' or department like '%,?,%' or department like '%[?,%' or department like '%,?]%')",true,user.userid, did, did, did, did).order(:id)
         users.each do |u|
           render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
           # 广播通知审核员
@@ -92,17 +88,90 @@ class UsersController < ApplicationController
         end
       end
     end
+    # 用户上级部门路径无审核员, 推送信息到管理员审核
+    # 查询管理员
+    uri = URI("https://oapi.dingtalk.com/user/get_admin")
+    p = {access_token: token}
+    res, _, msg = User.getDD(uri, p)
+    if msg != ""
+      render json: {message: msg, errorcode: 1}, status: 200 and return
+    end
+    res['adminList'].each do |admin|
+      if admin['sys_level'] == 1
+        u = User.find_by(userid: admin['userid'])
+        if u.blank?
+          uri = URI("https://oapi.dingtalk.com/user/get")
+          p = {access_token: token, userid: admin['userid']}
+          res, _, msg = User.getDD(uri, p)
+          if msg != ""
+            render json: {message: msg, errorcode: 1}, status: 200 and return
+          end
+          u = User.new
+          u.userid = res['userid']
+          u.unionid = res['unionid']
+          u.mobile = res['mobile']
+          u.tel = res['tel']
+          u.workPlace = res['workPlace']
+          u.isAdmin = res['isAdmin']
+          u.isBoss = res['isBoss']
+          u.isLeaderInDepts = res['isLeaderInDepts']
+          u.name = res['name']
+          u.active = res['active']
+          u.department = res['department']
+          u.position = res['position']
+          u.avatar = res['avatar']
+          u.save
+          u.update(pyname: User.getPYName(u))
+        end
+        render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
+        # 广播通知审核员
+        noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+        return
+      end
+    end
     render json: {errorcode: 1, message: "未设置审核员"}, status: 200
+  end
+
+  # POST /examineresult 钉钉通知审核结果
+  def examine_result
+    u = User.find_by(pyname: params[:name])
+    render json: {message: "用户不存在", errorcode: 1}, status: 200 and return if u.blank?
+    ddconfig = Ddconfig.first
+    if ddconfig.blank?
+      render json: {message: "钉钉服务未配置", errorcode: 1}, status: 200 and return
+    end
+    token = ""
+    if ddconfig.DDToken.present? && ddconfig.DDTokenCreatedAt.present? && ddconfig.DDTokenCreatedAt + 7100 >= Time.current
+      token = ddconfig.DDToken
+    else
+      # 获取 access_token
+      uri = URI("https://oapi.dingtalk.com/gettoken")
+      p = {appkey: config.AppKey, appsecret: config.AppSecret}
+      res, _, msg = User.getDD(uri, p)
+      if msg != ""
+        render json: {message: msg, errorcode: 1}, status: 200 and return
+      end
+      token = res['access_token']
+      ddconfig.update(DDToken: token, DDTokenCreatedAt: Time.current)
+    end
+    content = params[:upload_time]+"\n提交的审核申请"
+    result =  params[:result] == 1 ? "通过" : "被驳回"
+    content = content + result
+    if params[:description].present?
+      content = content + "\n"+params[:description]
+    end
+    render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
+    noteDD(ddconfig.try(:AgentId),u.userid,content,token)
   end
 
   # GET /examineinfo 登录获取用户审核身份
   def examine_info
+    # PC端超级用户
+    if params[:name] == "admin"
+      render json: {errorcode: 0, is_examine: true, is_admin: true, name: "admin"}, status: :ok and return
+    end
     user = User.find_by(pyname: params[:name])
     render json: {message: "用户不存在", errorcode: 1}, status: 200 and return if user.blank?
-    # 超级用户
-    if user.name == "admin"
-      render json: {errorcode: 0, is_examine: true, is_admin: true, name: user.pyname}, status: :ok and return
-    end
     # 获取钉钉用户信息
     ddconfig = Ddconfig.first
     if ddconfig.blank?
@@ -250,9 +319,15 @@ class UsersController < ApplicationController
       end
       u.update(userid: userid, name: name, isSurfingNet: params[:enable], pyname: User.getPYName(u))
     end
-    # 通知网控
-    Rabbitmq.send("userlist", users)
-    render json: {message: "设置成功"}, status: 200
+
+    if users.size == 0 
+      render json: {message: "无权限设置该用户上网开通功能"}, status: 300
+    else
+      # 通知网控
+      Rabbitmq.send("userlist", users)
+      render json: {message: "设置成功"}, status: 200
+    end
+    
   end
 
   # POST /surfingControll 设置控制上网员工
