@@ -206,9 +206,9 @@ class UsersController < ApplicationController
     # @current_user = User.first
 
     isAdmin = @current_user.isAdmin
-    render json: {message: "非管理员不能操作审核控制开关"}, status: 300 and return if !isAdmin 
+    render json: {message: "非管理员不能操作审核控制开关"}, status: 403 and return if !isAdmin 
     userids = params[:userids].present? ? params[:userids] : []
-    render json: {message: "参数错误"}, status: 300 and return if userids.blank? || params[:enable].nil?
+    render json: {message: "参数错误"}, status: 403 and return if userids.blank? || params[:enable].nil?
 
     userids.each do |userid|
       user = User.find_by(userid: userid)
@@ -233,12 +233,12 @@ class UsersController < ApplicationController
     users = params[:users].present? ? params[:users] : []
     notuserids = params[:department_not_userids].present? ? params[:department_not_userids] : []
     notdepartmentids = params[:department_not].present? ? params[:department_not] : []
-    render json: {message: "参数错误"}, status: 300 and return if (users.blank? && department_ids.blank?) || params[:enable].nil?
+    render json: {message: "参数错误"}, status: 403 and return if (users.blank? && department_ids.blank?) || params[:enable].nil?
 
     isAdmin = @current_user.isAdmin
     isSurfingControll = @current_user.isSurfingControll
     ddtoken = @current_user.ddtoken
-    render json: {message: "该用户无权限设置上网开关"}, status: 300 and return if !isAdmin && !isSurfingControll
+    render json: {message: "该用户无权限设置上网开关"}, status: 403 and return if !isAdmin && !isSurfingControll
 
     # 获取所有部门id和名字
     @departmentInfo = {}
@@ -321,7 +321,7 @@ class UsersController < ApplicationController
     end
 
     if users.size == 0 
-      render json: {message: "无权限设置该用户上网开通功能"}, status: 300
+      render json: {message: "无权限设置该用户上网开通功能"}, status: 403
     else
       # 通知网控
       Rabbitmq.send("userlist", users)
@@ -336,9 +336,9 @@ class UsersController < ApplicationController
     # @current_user = User.first
 
     isAdmin = @current_user.isAdmin
-    render json: {message: "非管理员不能操作上网控制开关"}, status: 300 and return if !isAdmin 
+    render json: {message: "非管理员不能操作上网控制开关"}, status: 403 and return if !isAdmin 
     userids = params[:userids].present? ? params[:userids] : []
-    render json: {message: "参数错误"}, status: 300 and return if userids.blank? || params[:enable].nil?
+    render json: {message: "参数错误"}, status: 403 and return if userids.blank? || params[:enable].nil?
     userids.each do |userid|
       user = User.find_by(userid: userid)
       if user.blank?

@@ -18,9 +18,9 @@ class User < ApplicationRecord
     res = JSON.parse(response.body)
     if res['errcode'] != 0
       if res['errcode'] == 40001 || res['errcode'] == 40014
-        return nil,301,"#{res['errmsg']}"
+        return nil,210,"#{res['errmsg']}"
       else
-        return nil,300,"#{res['errmsg']}"
+        return nil,403,"#{res['errmsg']}"
       end
     end
     return res, 200, ""
@@ -32,9 +32,9 @@ class User < ApplicationRecord
     res = JSON.parse(response.body)
     if res['errcode'] != 0
       if res['errcode'] == 40001 || res['errcode'] == 40014
-        return nil,301,"#{res['errmsg']}"
+        return nil,210,"#{res['errmsg']}"
       else
-        return nil,300,"#{res['errmsg']}"
+        return nil,403,"#{res['errmsg']}"
       end
     end
     return res, 200, ""

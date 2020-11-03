@@ -25,11 +25,11 @@ class DdconfigsController < ApplicationController
     # 验证appkey和appsecret
     parmas = {appkey: params[:AppKey], appsecret: params[:AppSecret]}
     res, status, msg = User.getDD("https://oapi.dingtalk.com/gettoken", parmas)
-    render json: {message: msg},status: 300 and return if status != 200
+    render json: {message: msg},status: 403 and return if status != 200
     token = res['access_token']
     # 验证AgentId
     res, status, msg = User.postDD("https://oapi.dingtalk.com/microapp/list?access_token=#{token}", {})
-    render json: {message: msg},status: 300 and return if status != 200
+    render json: {message: msg},status: 403 and return if status != 200
     isFind = false
     res['appList'].each do |app|
       if app['agentId'].to_s == params[:AgentId]
@@ -37,7 +37,7 @@ class DdconfigsController < ApplicationController
         break
       end
     end
-    render json: {message: "AgentId错误"},status: 300 and return if !isFind
+    render json: {message: "AgentId错误"},status: 403 and return if !isFind
 
 
     if Ddconfig.first.present?
@@ -46,14 +46,14 @@ class DdconfigsController < ApplicationController
       if @ddconfig.update(ddconfig_params)
         render json: {message: "配置成功"}, status: 200 and return
       else
-        render json: {message: "配置失败"}, status: 300 and return
+        render json: {message: "配置失败"}, status: 403 and return
       end
     else
       @ddconfig = Ddconfig.new(ddconfig_params)
       if @ddconfig.save
         render json: {message: "配置成功"}, status: 200 and return
       else
-        render json: {message: "配置失败"}, status: 300 and return
+        render json: {message: "配置失败"}, status: 403 and return
       end
     end
   end
