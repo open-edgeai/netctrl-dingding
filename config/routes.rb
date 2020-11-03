@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  post 'examineresult', to: 'users#examine_result'
   post 'uploadexamine', to: 'users#upload_examine'
   get 'examineinfo', to: 'users#examine_info'
   post 'examine', to: 'users#examine'
