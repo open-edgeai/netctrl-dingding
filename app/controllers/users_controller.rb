@@ -58,7 +58,7 @@ class UsersController < ApplicationController
     else
       # 获取 access_token
       uri = URI("https://oapi.dingtalk.com/gettoken")
-      p = {appkey: config.AppKey, appsecret: config.AppSecret}
+      p = {appkey: ddconfig.AppKey, appsecret: ddconfig.AppSecret}
       res, _, msg = User.getDD(uri, p)
       if msg != ""
         render json: {message: msg, errorcode: 1}, status: 200 and return
