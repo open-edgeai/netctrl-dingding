@@ -42,7 +42,7 @@ class User < ApplicationRecord
 
   def self.getPYName(user)
     py = PinYin.abbr(user.name) # 简拼
-    return py+"#{user.id}"
+    return "dd-"+py+"#{user.id}"
   end
 
 end
