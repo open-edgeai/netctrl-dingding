@@ -80,10 +80,17 @@ class UsersController < ApplicationController
       ds.each do |did|
         # 获取该部门的审核人
         users = User.where("\"isExamine\" = ? and \"userid\" <> ? and (department like '%[?]%' or department like '%,?,%' or department like '%[?,%' or department like '%,?]%')",true,user.userid, did, did, did, did).order(:id)
-        users.each do |u|
-          render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
-          # 广播通知审核员
-          noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+        # users.each do |u|
+        #   render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
+        #   # 广播通知审核员
+        #   noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+        #   return
+        # end
+        if users.size > 0
+          render json: {errorcode: 0, ExamineName: users.pluck(:pyname).join(",")}, status: 200
+          users.each do |u|
+            noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+          end
           return
         end
       end
@@ -96,40 +103,44 @@ class UsersController < ApplicationController
     if msg != ""
       render json: {message: msg, errorcode: 1}, status: 200 and return
     end
+    # 所有管理员为顶层审核员
+    examineNames = []
     res['adminList'].each do |admin|
-      if admin['sys_level'] == 1
-        u = User.find_by(userid: admin['userid'])
-        if u.blank?
-          uri = URI("https://oapi.dingtalk.com/user/get")
-          p = {access_token: token, userid: admin['userid']}
-          res, _, msg = User.getDD(uri, p)
-          if msg != ""
-            render json: {message: msg, errorcode: 1}, status: 200 and return
-          end
-          u = User.new
-          u.userid = res['userid']
-          u.unionid = res['unionid']
-          u.mobile = res['mobile']
-          u.tel = res['tel']
-          u.workPlace = res['workPlace']
-          u.isAdmin = res['isAdmin']
-          u.isBoss = res['isBoss']
-          u.isLeaderInDepts = res['isLeaderInDepts']
-          u.name = res['name']
-          u.active = res['active']
-          u.department = res['department']
-          u.position = res['position']
-          u.avatar = res['avatar']
-          u.save
-          u.update(pyname: User.getPYName(u))
+      u = User.find_by(userid: admin['userid'])
+      if u.blank?
+        uri = URI("https://oapi.dingtalk.com/user/get")
+        p = {access_token: token, userid: admin['userid']}
+        res, _, msg = User.getDD(uri, p)
+        if msg != ""
+          render json: {message: msg, errorcode: 1}, status: 200 and return
         end
-        render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
-        # 广播通知审核员
-        noteDD(ddconfig.try(:AgentId),u.userid,content,token)
-        return
+        u = User.new
+        u.userid = res['userid']
+        u.unionid = res['unionid']
+        u.mobile = res['mobile']
+        u.tel = res['tel']
+        u.workPlace = res['workPlace']
+        u.isAdmin = res['isAdmin']
+        u.isBoss = res['isBoss']
+        u.isLeaderInDepts = res['isLeaderInDepts']
+        u.name = res['name']
+        u.active = res['active']
+        u.department = res['department']
+        u.position = res['position']
+        u.avatar = res['avatar']
+        u.save
+        u.update(pyname: User.getPYName(u))
       end
+      examineNames << u.pyname
+      # 广播通知审核员
+      noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+      #Rails.logger.debug("=======管理员审核======user: #{u.userid}===name: #{u.pyname}==")
     end
-    render json: {errorcode: 1, message: "未设置审核员"}, status: 200
+    if examineNames.size > 0
+      render json: {errorcode: 0, ExamineName: examineNames.join(",")}, status: 200
+    else
+      render json: {errorcode: 1, message: "未设置审核员"}, status: 200
+    end
   end
 
   # POST /examineresult 钉钉通知审核结果
@@ -198,7 +209,12 @@ class UsersController < ApplicationController
     if msg != ""
       render json: {message: msg, errorcode: 1}, status: 200 and return
     end
-    render json: {errorcode: 0, is_examine: user.isExamine, is_admin: res['isAdmin'], name: user.pyname}, status: :ok
+    # 管理员默认为审核员
+    isExamine = user.isExamine
+    if res['isAdmin']
+      isExamine = true
+    end
+    render json: {errorcode: 0, is_examine: isExamine, is_admin: res['isAdmin'], name: user.pyname}, status: :ok
   end
 
   # POST /examine 设置审核员
