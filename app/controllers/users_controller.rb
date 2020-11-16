@@ -46,6 +46,7 @@ class UsersController < ApplicationController
   def upload_examine
     # 上传用户
     user = User.find_by(pyname: params[:upload_name])
+    # user = User.find(44)
     render json: {message: "用户不存在", errorcode: 1}, status: 200 and return if user.blank?
     
     ddconfig = Ddconfig.first
@@ -76,24 +77,27 @@ class UsersController < ApplicationController
     end
     content = "用户: #{user.name}\n帐号: #{params["upload_name"]}\n在#{DateTime.parse(params["upload_time"]).strftime('%Y-%m-%d %H:%M:%S').to_s}上传了文件，请及时审核"
     departments = res['department']
+    isFind = false
     departments.each do |ds|
-      ds.each do |did|
-        # 获取该部门的审核人
-        users = User.where("\"isExamine\" = ? and \"userid\" <> ? and (department like '%[?]%' or department like '%,?,%' or department like '%[?,%' or department like '%,?]%')",true,user.userid, did, did, did, did).order(:id)
-        # users.each do |u|
-        #   render json: {errorcode: 0, ExamineName: u.pyname}, status: 200
-        #   # 广播通知审核员
-        #   noteDD(ddconfig.try(:AgentId),u.userid,content,token)
-        #   return
-        # end
-        if users.size > 0
-          render json: {errorcode: 0, ExamineName: users.pluck(:pyname).join(",")}, status: 200
-          users.each do |u|
-            noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+      # Rails.logger.debug("===========ds: #{ds}")
+      if ds[0].to_s == params['examine_department']
+        isFind = true
+        ds.each do |did|
+          # 获取该部门的审核人
+          users = User.where("\"isExamine\" = ? and \"userid\" <> ? and (department like '%[?]%' or department like '%,?,%' or department like '%[?,%' or department like '%,?]%')",true,user.userid, did, did, did, did).order(:id)
+          if users.size > 0
+            render json: {errorcode: 0, ExamineName: users.pluck(:pyname).join(",")}, status: 200
+            users.each do |u|
+              noteDD(ddconfig.try(:AgentId),u.userid,content,token)
+              # Rails.logger.debug("=======审核员======user: #{u.userid}===name: #{u.pyname}==")
+            end
+            return
           end
-          return
         end
       end
+    end
+    if !isFind
+      render json: {message: "申请审核部门不是用户所属部门", errorcode: 1}, status: 200 and return
     end
     # 用户上级部门路径无审核员, 推送信息到管理员审核
     # 查询管理员
@@ -134,7 +138,7 @@ class UsersController < ApplicationController
       examineNames << u.pyname
       # 广播通知审核员
       noteDD(ddconfig.try(:AgentId),u.userid,content,token)
-      #Rails.logger.debug("=======管理员审核======user: #{u.userid}===name: #{u.pyname}==")
+      # Rails.logger.debug("=======管理员审核======user: #{u.userid}===name: #{u.pyname}==")
     end
     if examineNames.size > 0
       render json: {errorcode: 0, ExamineName: examineNames.join(",")}, status: 200
@@ -209,12 +213,25 @@ class UsersController < ApplicationController
     if msg != ""
       render json: {message: msg, errorcode: 1}, status: 200 and return
     end
+    # 获取用户部门信息
+    departments = []
+    uri = URI("https://oapi.dingtalk.com/department/get")
+    res['department'].each do |did|
+      p = {access_token: token, id: did}
+      r, _, msg = User.getDD(uri, p)
+      if msg == ""
+        departments << {
+          id: did,
+          name: r['name']
+        }
+      end
+    end
     # 管理员默认为审核员
     isExamine = user.isExamine
     if res['isAdmin']
       isExamine = true
     end
-    render json: {errorcode: 0, is_examine: isExamine, is_admin: res['isAdmin'], name: user.pyname}, status: :ok
+    render json: {errorcode: 0,is_ctr_net: user.isSurfingControll, is_examine: isExamine, is_admin: res['isAdmin'], name: user.pyname,departments: departments}, status: :ok
   end
 
   # POST /examine 设置审核员
